@@ -226,7 +226,7 @@ class Trainer:
         else:
             return l1 + stft
     
-  def train_loop(self):
+ def train_loop(self):
     """
     Training Loop
     """
@@ -258,6 +258,7 @@ class Trainer:
 
     if batch > 0:  # Only update the tensorboard scalar if the loop was entered
         self.tb.add_scalar("Train Loss", avg / batch, self.current_epoch)
+
 
 
     def test_loop(self):
