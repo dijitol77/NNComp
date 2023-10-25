@@ -232,7 +232,13 @@ class Trainer:
         """
         size = len(self.train_loader.dataset)
         avg = 0
+        batch = 0  # Initialize batch to 0
         for batch, (X, y) in enumerate(self.train_loader):
+            # ... (existing code)
+        
+        if batch > 0:  # Only update the scalar if the loop was entered.
+            self.tb.add_scalar("Train Loss", avg / batch, self.current_epoch)
+
 
             #move to GPU
             X = X.to(self.device)
