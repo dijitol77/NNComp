@@ -226,42 +226,39 @@ class Trainer:
         else:
             return l1 + stft
     
-    def train_loop(self):
-        """
-        Training Loop
-        """
-        size = len(self.train_loader.dataset)
-        avg = 0
-        batch = 0  # Initialize batch to 0
-        for batch, (X, y) in enumerate(self.train_loader):
-            # ... (existing code)
-        
-        if batch > 0:  # Only update the scalar if the loop was entered.
-            self.tb.add_scalar("Train Loss", avg / batch, self.current_epoch)
+  def train_loop(self):
+    """
+    Training Loop
+    """
+    size = len(self.train_loader.dataset)
+    avg = 0
+    batch = 0  # Initialize batch to 0
 
+    for batch, (X, y) in enumerate(self.train_loader):
+        # Move to GPU
+        X = X.to(self.device)
+        y = y.to(self.device)
 
-            #move to GPU
-            X = X.to(self.device)
-            y = y.to(self.device)
+        # Compute prediction and loss
+        pred = self.model(X)
+        loss = self.loss_fn(pred, y)
 
-            # Compute prediction and loss
-            #print(torch.cuda.memory_summary(device=None, abbreviated=False))
-            pred = self.model(X)
-            loss = self.loss_fn(pred, y)    
+        # Backpropagation
+        self.optimizer.zero_grad()
+        loss.backward()
 
-            # Backpropagation
-            self.optimizer.zero_grad()
-            loss.backward()
+        # Gradient clipping
+        nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=70.0)
 
-            #Gradient clipping
-            nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=70.0)
-            self.optimizer.step()
+        self.optimizer.step()
 
-            loss, current = loss.item(), batch * len(X)
-            avg += loss
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]", end='\r')
+        loss, current = loss.item(), batch * len(X)
+        avg += loss
+        print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]", end='\r')
 
+    if batch > 0:  # Only update the tensorboard scalar if the loop was entered
         self.tb.add_scalar("Train Loss", avg / batch, self.current_epoch)
+
 
     def test_loop(self):
         """
