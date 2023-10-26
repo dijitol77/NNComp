@@ -226,38 +226,48 @@ class Trainer:
         else:
             return l1 + stft
     
- def train_loop(self):
-    """
-    Training Loop
-    """
-    size = len(self.train_loader.dataset)
-    avg = 0
-    batch = 0  # Initialize batch to 0
 
-    for batch, (X, y) in enumerate(self.train_loader):
-        # Move to GPU
-        X = X.to(self.device)
-        y = y.to(self.device)
 
-        # Compute prediction and loss
-        pred = self.model(X)
-        loss = self.loss_fn(pred, y)
+    def train_loop(self):
+        """
+        Training Loop
+        """
+        size = len(self.train_loader.dataset)
+        
+        # Check if the DataLoader is empty or not
+        print(f"Number of batches in train_loader: {len(self.train_loader)}")
+        if len(self.train_loader) == 0:
+            print("train_loader is empty. Exiting the training loop.")
+            return
 
-        # Backpropagation
-        self.optimizer.zero_grad()
-        loss.backward()
+        avg = 0
+        batch = 0  # Initialize batch variable here
+        
+        for batch, (X, y) in enumerate(self.train_loader):
+            # move to GPU
+            X = X.to(self.device)
+            y = y.to(self.device)
 
-        # Gradient clipping
-        nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=70.0)
+            # Compute prediction and loss
+            pred = self.model(X)
+            loss = self.loss_fn(pred, y)    
 
-        self.optimizer.step()
+            # Backpropagation
+            self.optimizer.zero_grad()
+            loss.backward()
 
-        loss, current = loss.item(), batch * len(X)
-        avg += loss
-        print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]", end='\r')
+            # Gradient clipping
+            nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=70.0)
+            self.optimizer.step()
 
-    if batch > 0:  # Only update the tensorboard scalar if the loop was entered
-        self.tb.add_scalar("Train Loss", avg / batch, self.current_epoch)
+            loss, current = loss.item(), batch * len(X)
+            avg += loss
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]", end='\r')
+
+        self.tb.add_scalar("Train Loss", avg / (batch + 1), self.current_epoch)  # Avoid division by zero
+
+    # ... (existing code: test_loop, loss_metrics, predict, fit, etc.)
+
 
 
 
