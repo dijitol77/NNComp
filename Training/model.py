@@ -47,16 +47,33 @@ class AudioDataSet(torch.utils.data.Dataset):
 
         return input, target
 
-    def setup(self):
-        """
-        Sets up dataset from file structure
-        """
-        #Read files in input path
-        files = sorted_alphanumeric(os.listdir(self.input_path))
+   def setup(self):
+    """
+    Sets up dataset from file structure
+    """
+    # Read files in input path
+    files = sorted_alphanumeric(os.listdir(self.input_path))
+    
+    # Debug print to check files
+    print(f"Files found: {files}")
+    
+    if len(files) == 0:
+        raise ValueError("No files found in dataset path.")
+        
+    try:
         num_samples = int(files[-1][6:-4])
+    except ValueError:
+        raise ValueError("Could not determine the number of samples based on file names.")
+        
+    # Debug print to check num_samples
+    print(f"Number of samples: {num_samples}")
+    
+    if num_samples <= 0:
+        raise ValueError("Number of samples should be greater than zero.")
+        
+    # Generate indices
+    self.len = num_samples
 
-        #Generate indices
-        self.len = num_samples
 
     def get_copy(self, train=True):
         """
