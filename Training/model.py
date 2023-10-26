@@ -11,94 +11,52 @@ from torch.utils.tensorboard import SummaryWriter
 import gc
 import torch
 
-
 def sorted_alphanumeric(data):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(data, key=alphanum_key)
 
 class AudioDataSet(torch.utils.data.Dataset):
-    """
-    Dataset class for audio samples. 
-    """
     def __init__(self, input_path, sr=48000):
-
         self.input_path = input_path
         self.sr = sr
-        self.setup() 
-        
+        self.setup()
+
     def __len__(self):
-        """
-        Number of audio samples in dataset
-        """
         return self.len
 
     def __getitem__(self, idx):
-        """
-        Get sample at idx
-        """
+        _, input_data = wav.read(self.input_path + 'input{}.wav'.format(idx))
+        _, target = wav.read(self.input_path + 'target{}.wav'.format(idx))
+        return torch.tensor(input_data)[:, None], torch.tensor(target)[:, None]
 
-        #Read audio files
-        _ , input = wav.read(self.input_path + 'input{}.wav'.format(idx))
-        _ , target = wav.read(self.input_path + 'target{}.wav'.format(idx))
-
-        input = torch.tensor(input)[:, None]
-        target = torch.tensor(target)[:, None]
-
-        return input, target
-
-   def setup(self):
-    """
-    Sets up dataset from file structure
-    """
-    # Read files in input path
-    files = sorted_alphanumeric(os.listdir(self.input_path))
-    
-    # Debug print to check files
-    print(f"Files found: {files}")
-    
-    if len(files) == 0:
-        raise ValueError("No files found in dataset path.")
-        
-    try:
-        num_samples = int(files[-1][6:-4])
-    except ValueError:
-        raise ValueError("Could not determine the number of samples based on file names.")
-        
-    # Debug print to check num_samples
-    print(f"Number of samples: {num_samples}")
-    
-    if num_samples <= 0:
-        raise ValueError("Number of samples should be greater than zero.")
-        
-    # Generate indices
-    self.len = num_samples
-
+    def setup(self):
+        files = sorted_alphanumeric(os.listdir(self.input_path))
+        if len(files) == 0:
+            raise ValueError("No files found in dataset path.")
+        try:
+            self.len = int(files[-1][6:-4])
+        except ValueError:
+            raise ValueError("Could not determine the number of samples based on file names.")
+        if self.len <= 0:
+            raise ValueError("Number of samples should be greater than zero.")
 
     def get_copy(self, train=True):
-        """
-        Returns a copy of this instance. Can change change the train=False to get a copy that represents the validation samples.
-        """
         ret = deepcopy(self)
         ret.train = train
         return ret
 
-        
 class LstmModel(nn.Module):
-    """
-    Neural Network Class
-    """
     def __init__(self, input_size=1, output_size=1, hidden_size=32, num_layers=1):
         super(LstmModel, self).__init__()
-
-        self.lstm = torch.nn.LSTM(input_size, hidden_size, num_layers, batch_first=False, bidirectional=False)
-        self.linear = torch.nn.Linear(hidden_size, output_size)
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=False, bidirectional=False)
+        self.linear = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
-        x = x.permute(1,0,2)
+        x = x.permute(1, 0, 2)
         out, _ = self.lstm(x)
         out = torch.tanh(self.linear(out))
-        out = out.permute(1,0,2)
+        out = out.permute(1, 0, 2)
         return out
 
 class GruModel(nn.Module):
